@@ -132,8 +132,7 @@ class Crystal:
                     )
                 )
             )
-            # TODO: only in this case self.cell is a tuple
-            self.cell = (a, b, c, alpha, beta, gamma)
+            self.cell = np.array((a, b, c, alpha, beta, gamma))
         else:
             raise Exception("Cell cannot contain " + np.size(cell) + " entries")
 
@@ -270,6 +269,7 @@ class Crystal:
             positions=self.positions.copy(),
             numbers=self.numbers.copy(),
             cell=lat_new,
+            occupancy=self.occupancy.copy(),
         )
 
         if return_deformation_matrix:
@@ -631,6 +631,9 @@ class Crystal:
                 self.lat_inv[0, :] + self.lat_inv[1, :],
                 self.lat_inv[0, :] + self.lat_inv[2, :],
                 self.lat_inv[1, :] + self.lat_inv[2, :],
+                self.lat_inv[0, :] - self.lat_inv[1, :],
+                self.lat_inv[0, :] - self.lat_inv[2, :],
+                self.lat_inv[1, :] - self.lat_inv[2, :],
                 self.lat_inv[0, :] + self.lat_inv[1, :] + self.lat_inv[2, :],
                 self.lat_inv[0, :] - self.lat_inv[1, :] + self.lat_inv[2, :],
                 self.lat_inv[0, :] + self.lat_inv[1, :] - self.lat_inv[2, :],

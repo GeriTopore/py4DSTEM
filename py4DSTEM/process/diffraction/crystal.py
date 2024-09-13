@@ -68,6 +68,7 @@ class Crystal:
         positions,
         numbers,
         cell,
+        # how to use occupancy?
         occupancy=None,
     ):
         """
@@ -104,6 +105,7 @@ class Crystal:
             self.cell = np.hstack([cell, 90, 90, 90])
         elif np.size(cell) == 6:
             self.cell = cell
+        # case where cell is a 3x3 array of vector components in 3D
         elif np.shape(cell)[0] == 3 and np.shape(cell)[1] == 3:
             self.lat_real = np.array(cell)
             a = np.linalg.norm(self.lat_real[0, :])
@@ -130,6 +132,7 @@ class Crystal:
                     )
                 )
             )
+            # TODO: only in this case self.cell is a tuple
             self.cell = (a, b, c, alpha, beta, gamma)
         else:
             raise Exception("Cell cannot contain " + np.size(cell) + " entries")
@@ -163,6 +166,8 @@ class Crystal:
             beta = np.deg2rad(self.cell[4])
             gamma = np.deg2rad(self.cell[5])
             f = np.cos(beta) * np.cos(gamma) - np.cos(alpha)
+            
+            # volume formula for a parallelepiped of any shape
             vol = (
                 a
                 * b
@@ -188,6 +193,7 @@ class Crystal:
             )
 
         # Inverse lattice, metric tensors
+        # dot product vs matrix multiplication?
         self.metric_real = self.lat_real @ self.lat_real.T
         self.metric_inv = np.linalg.inv(self.metric_real)
         self.lat_inv = self.metric_inv @ self.lat_real

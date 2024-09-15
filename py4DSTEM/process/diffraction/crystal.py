@@ -32,7 +32,6 @@ class Crystal:
         cluster_grains,
         cluster_orientation_map,
         calculate_strain,
-        save_ang_file,
         symmetry_reduce_directions,
         orientation_map_to_orix_CrystalMap,
         save_ang_file,
@@ -129,9 +128,9 @@ class Crystal:
                     )
                 )
             )
-            self.cell = (a, b, c, alpha, beta, gamma)
+            self.cell = np.array((a, b, c, alpha, beta, gamma))
         else:
-            raise Exception("Cell cannot contain " + np.size(cell) + " entries")
+            raise Exception(f"Cell cannot contain {np.size(cell)} entries")
 
         # occupancy
         if occupancy is not None:
@@ -521,22 +520,19 @@ class Crystal:
             assert (
                 len(latt_params) == 2
             ), "2 lattice parametere are expected for hexagonal: a, c, but given {len(latt_params)}".format(
-                len(latt_params)
-            )
+                )
             lattice = mg.core.Lattice.hexagonal(latt_params[0], latt_params[1])
         elif lattice_type == "tetragonal":
             assert (
                 len(latt_params) == 2
             ), "2 lattice parametere are expected for tetragonal: a, c, but given {len(latt_params)}".format(
-                len(latt_params)
-            )
+                )
             lattice = mg.core.Lattice.tetragonal(latt_params[0], latt_params[1])
         elif lattice_type == "orthorhombic":
             assert (
                 len(latt_params) == 3
             ), "3 lattice parametere are expected for orthorhombic: a, b, c, but given {len(latt_params)}".format(
-                len(latt_params)
-            )
+                )
             lattice = mg.core.Lattice.orthorhombic(
                 latt_params[0], latt_params[1], latt_params[2]
             )
@@ -544,8 +540,7 @@ class Crystal:
             assert (
                 len(latt_params) == 4
             ), "4 lattice parametere are expected for monoclinic: a, b, c, beta,  but given {len(latt_params)}".format(
-                len(latt_params)
-            )
+                )
             lattice = mg.core.Lattice.monoclinic(
                 latt_params[0], latt_params[1], latt_params[2], latt_params[3]
             )
@@ -553,8 +548,7 @@ class Crystal:
             assert (
                 len(latt_params) == 6
             ), "all 6 lattice parametere are expected: a, b, c, alpha, beta, gamma, but given {len(latt_params)}".format(
-                len(latt_params)
-            )
+                )
             lattice = mg.core.Lattice.from_parameters(
                 latt_params[0],
                 latt_params[1],

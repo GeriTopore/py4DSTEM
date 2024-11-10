@@ -448,3 +448,66 @@ def get_origin_friedel(
         return copy_to_device(qx0), copy_to_device(qy0)
     else:
         return qx0, qy0
+
+def get_origin_peaktracker(
+    vectors,
+    rpos,
+    qpos,
+    maxd,
+):
+    # allocate space
+    known = np.zeros(vectors.Rshape,dtype=bool)
+    queue = []
+    ans = np.zeros((2,vectors.Rshape[0],vectors.Rshape[1]))
+    
+    # find position at seed point
+    v = vectors.raw[rpos[0],rpos[1]].data
+    d = np.hypot(
+        v['qx'] - qpos[0],
+        v['qy'] - qpos[1]
+    )
+    idx = np.argmin(d)
+    if d[idx] > maxd:
+        raise Exception("No peak found at the seed point!")
+
+    # store and update tracking arrays
+    ans[0,rpos[0],rpos[1]] = v['qx'][idx]
+    ans[1,rpos[0],rpos[1]] = v['qy'][idx]
+    known[rpos[0],rpos[1]] = True
+    queue.append(rpos)
+
+    # iterative search over adjacent points
+    while len(queue)>0:
+        pos = queue.pop()
+        x = ans[0,pos[0],pos[1]]
+        y = ans[1,pos[0],pos[1]]
+        for p in (
+            (pos[0]+1,pos[1]+1),
+            (pos[0]+1,pos[1]  ),
+            (pos[0]+1,pos[1]-1),
+            (pos[0]  ,pos[1]+1),
+            (pos[0]  ,pos[1]-1),
+            (pos[0]-1,pos[1]+1),
+            (pos[0]-1,pos[1]  ),
+            (pos[0]-1,pos[1]-1),
+        ):
+            if p[0]<0 or p[1]<0 or p[0]>=vectors.Rshape[0] or p[1]>=vectors.Rshape[1]:
+                pass
+            elif known[p[0],p[1]]:
+                pass
+            else:
+                v = vectors.raw[p[0],p[1]].data
+                d = np.hypot(
+                    v['qx'] - x,
+                    v['qy'] - y
+                )
+                idx = np.argmin(d)
+                if d[idx] <= maxd:
+                    ans[0,p[0],p[1]] = v['qx'][idx]
+                    ans[1,p[0],p[1]] = v['qy'][idx]
+                    known[p[0],p[1]] = True
+                    queue.append(p)
+                else:
+                    pass
+
+    return ans[0],ans[1],known

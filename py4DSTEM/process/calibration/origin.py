@@ -481,16 +481,23 @@ def get_origin_peaktracker(
         pos = queue.pop()
         x = ans[0,pos[0],pos[1]]
         y = ans[1,pos[0],pos[1]]
-        for p in (
-            (pos[0]+1,pos[1]+1),
-            (pos[0]+1,pos[1]  ),
-            (pos[0]+1,pos[1]-1),
-            (pos[0]  ,pos[1]+1),
-            (pos[0]  ,pos[1]-1),
-            (pos[0]-1,pos[1]+1),
-            (pos[0]-1,pos[1]  ),
-            (pos[0]-1,pos[1]-1),
-        ):
+        
+        directions = [
+            (1,1),
+            (1,0),
+            (1,-1),
+            (0,1),
+            (0,-1),
+            (-1,1),
+            (-1,0),
+            (-1,-1),
+        ]
+        
+        adjacent_points = [(pos[0] + d[0], pos[1] + d[1]) for d in directions]
+        
+        for p in adjacent_points:
+            
+            # check if point is in bounds and not already known
             if p[0]<0 or p[1]<0 or p[0]>=vectors.Rshape[0] or p[1]>=vectors.Rshape[1]:
                 pass
             elif known[p[0],p[1]]:

@@ -495,6 +495,7 @@ def get_origin_peaktracker(
             x = ans[0,pos[0],pos[1]]
             y = ans[1,pos[0],pos[1]]
 
+            # define directions to reach neighbouring points
             directions = [
                 (1,1), (1,0), (1,-1), (0,1),
                 (0,-1), (-1,1), (-1,0), (-1,-1),
@@ -523,34 +524,7 @@ def get_origin_peaktracker(
 
     elif mode == "spiral":
         # Generate spiral coordinates
-        def create_spiral_coords(size, start_point):
-            coords = []
-            x, y = start_point[0], start_point[1]
-            steps = 1
-            direction = 0  # 0: right, 1: down, 2: left, 3: up
-
-            while len(coords) < size * size:
-                for _ in range(steps):
-                    if 0 <= x < size and 0 <= y < size:
-                        coords.append((x, y))
-
-                    if direction == 0:     # Right
-                        x += 1
-                    elif direction == 1:    # Down
-                        y += 1
-                    elif direction == 2:    # Left
-                        x -= 1
-                    elif direction == 3:    # Up
-                        y -= 1
-
-                # Change direction
-                direction = (direction + 1) % 4
-                # Increase steps every two directions
-                if direction % 2 == 0:
-                    steps += 1
-            return coords
-
-        spiral_coords = create_spiral_coords(max(vectors.Rshape), rpos)
+        spiral_coords = _generate_spiral_path(max(vectors.Rshape), rpos)
 
         # Process points in spiral order
         for p in spiral_coords:
@@ -589,3 +563,30 @@ def get_origin_peaktracker(
         raise ValueError("Mode must be either 'walk' or 'spiral'")
 
     return ans[0],ans[1],known
+
+def _generate_spiral_path(size, start_point):
+    coords = []
+    x, y = start_point[0], start_point[1]
+    steps = 1
+    direction = 0  # 0: right, 1: down, 2: left, 3: up
+
+    while len(coords) < size * size:
+        for _ in range(steps):
+            if 0 <= x < size and 0 <= y < size:
+                coords.append((x, y))
+
+            if direction == 0:     # Right
+                x += 1
+            elif direction == 1:    # Down
+                y += 1
+            elif direction == 2:    # Left
+                x -= 1
+            elif direction == 3:    # Up
+                y -= 1
+
+        # Change direction
+        direction = (direction + 1) % 4
+        # Increase steps every two directions
+        if direction % 2 == 0:
+            steps += 1
+    return coords

@@ -454,55 +454,61 @@ def get_origin_peaktracker(
     rpos,
     qpos,
     maxd,
+    mode="walk"  # Add mode parameter
 ):
+    """
+    Track peaks across a dataset starting from a seed point.
+
+    Args:
+        vectors: PointListArray containing peak positions
+        rpos: (tuple) Seed position in real space (rx,ry)
+        qpos: (tuple) Starting reference point in diffraction space (qx,qy)
+        maxd: (float) Maximum distance to consider for peak matching
+        mode: (str) Either 'walk' or 'spiral' tracking pattern
+    """
     # allocate space
     known = np.zeros(vectors.Rshape,dtype=bool)
-    queue = []
     ans = np.zeros((2,vectors.Rshape[0],vectors.Rshape[1]))
-    
+
     # find position at seed point
     v = vectors.raw[rpos[0],rpos[1]].data
+    # calculate distance to seed point for all peaks
     d = np.hypot(
         v['qx'] - qpos[0],
         v['qy'] - qpos[1]
     )
+    # find closest peak
     idx = np.argmin(d)
     if d[idx] > maxd:
         raise Exception("No peak found at the seed point!")
 
-    # store and update tracking arrays
+    # store initial point
     ans[0,rpos[0],rpos[1]] = v['qx'][idx]
     ans[1,rpos[0],rpos[1]] = v['qy'][idx]
     known[rpos[0],rpos[1]] = True
-    queue.append(rpos)
 
-    # iterative search over adjacent points
-    while len(queue)>0:
-        pos = queue.pop()
-        x = ans[0,pos[0],pos[1]]
-        y = ans[1,pos[0],pos[1]]
-        
-        directions = [
-            (1,1),
-            (1,0),
-            (1,-1),
-            (0,1),
-            (0,-1),
-            (-1,1),
-            (-1,0),
-            (-1,-1),
-        ]
-        
-        adjacent_points = [(pos[0] + d[0], pos[1] + d[1]) for d in directions]
-        
-        for p in adjacent_points:
-            
-            # check if point is in bounds and not already known
-            if p[0]<0 or p[1]<0 or p[0]>=vectors.Rshape[0] or p[1]>=vectors.Rshape[1]:
-                pass
-            elif known[p[0],p[1]]:
-                pass
-            else:
+    if mode == "walk":
+        queue = [rpos]
+        # iterative search over adjacent points
+        while len(queue)>0:
+            pos = queue.pop()
+            x = ans[0,pos[0],pos[1]]
+            y = ans[1,pos[0],pos[1]]
+
+            directions = [
+                (1,1), (1,0), (1,-1), (0,1),
+                (0,-1), (-1,1), (-1,0), (-1,-1),
+            ]
+
+            adjacent_points = [(pos[0] + d[0], pos[1] + d[1]) for d in directions]
+
+            for p in adjacent_points:
+                # check if point is in bounds and not already known
+                if p[0]<0 or p[1]<0 or p[0]>=vectors.Rshape[0] or p[1]>=vectors.Rshape[1]:
+                    continue
+                if known[p[0],p[1]]:
+                    continue
+
                 v = vectors.raw[p[0],p[1]].data
                 d = np.hypot(
                     v['qx'] - x,
@@ -514,7 +520,72 @@ def get_origin_peaktracker(
                     ans[1,p[0],p[1]] = v['qy'][idx]
                     known[p[0],p[1]] = True
                     queue.append(p)
-                else:
-                    pass
+
+    elif mode == "spiral":
+        # Generate spiral coordinates
+        def create_spiral_coords(size, start_point):
+            coords = []
+            x, y = start_point[0], start_point[1]
+            steps = 1
+            direction = 0  # 0: right, 1: down, 2: left, 3: up
+
+            while len(coords) < size * size:
+                for _ in range(steps):
+                    if 0 <= x < size and 0 <= y < size:
+                        coords.append((x, y))
+
+                    if direction == 0:     # Right
+                        x += 1
+                    elif direction == 1:    # Down
+                        y += 1
+                    elif direction == 2:    # Left
+                        x -= 1
+                    elif direction == 3:    # Up
+                        y -= 1
+
+                # Change direction
+                direction = (direction + 1) % 4
+                # Increase steps every two directions
+                if direction % 2 == 0:
+                    steps += 1
+            return coords
+
+        spiral_coords = create_spiral_coords(max(vectors.Rshape), rpos)
+
+        # Process points in spiral order
+        for p in spiral_coords:
+            if p[0]<0 or p[1]<0 or p[0]>=vectors.Rshape[0] or p[1]>=vectors.Rshape[1]:
+                continue
+            if known[p[0],p[1]]:
+                continue
+
+            # Find nearest known point
+            known_positions = np.where(known)
+            if len(known_positions[0]) == 0:
+                continue
+
+            distances = np.hypot(
+                known_positions[0] - p[0],
+                known_positions[1] - p[1]
+            )
+            nearest_idx = np.argmin(distances)
+            nearest_pos = (known_positions[0][nearest_idx], known_positions[1][nearest_idx])
+
+            x = ans[0,nearest_pos[0],nearest_pos[1]]
+            y = ans[1,nearest_pos[0],nearest_pos[1]]
+
+            v = vectors.raw[p[0],p[1]].data
+            d = np.hypot(
+                v['qx'] - x,
+                v['qy'] - y
+            )
+            idx = np.argmin(d)
+            if d[idx] <= maxd:
+                ans[0,p[0],p[1]] = v['qx'][idx]
+                ans[1,p[0],p[1]] = v['qy'][idx]
+                known[p[0],p[1]] = True
+
+    else:
+        raise ValueError("Mode must be either 'walk' or 'spiral'")
 
     return ans[0],ans[1],known
